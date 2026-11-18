@@ -15,7 +15,7 @@ const exampleNetworks:Record<number,{funded:string;owner:string;usdc:string}>={
 };
 const usdcTransferData="0xa9059cbb000000000000000000000000000000000000000000000000000000000000dead00000000000000000000000000000000000000000000000000000000000f4240";
 type ExampleKey="eth-funded"|"eth-empty"|"usdc-empty"|"transferFrom";
-function transferFromData(owner:string){const word=(address:string)=>address.slice(2).toLowerCase().padStart(64,"0");return "0x23b872dd"+word(owner)+word("0x0000000000000000000000000000000000000002")+"0".repeat(60)+"0186a0";}
+function transferFromData(owner:string){const word=(address:string)=>address.slice(2).toLowerCase().padStart(64,"0");return "0x23b872dd"+word(owner)+word("0x0000000000000000000000000000000000000002")+"186a0".padStart(64,"0");}
 export default function Home(){
  const [chainId,setChainId]=useState<number>(8453),[from,setFrom]=useState(""),[to,setTo]=useState(""),[data,setData]=useState("0x"),[value,setValue]=useState("0");
  const [result,setResult]=useState<Result|null>(null),[loading,setLoading]=useState(false),[error,setError]=useState(""),[showRaw,setShowRaw]=useState(false);

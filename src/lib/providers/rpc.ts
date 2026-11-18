@@ -52,9 +52,9 @@ export class RpcFallbackProvider implements SimulationProvider {
           client.readContract({ address: tx.to, abi: erc20, functionName: "symbol" }),
           client.readContract({ address: tx.to, abi: erc20, functionName: "allowance", args: [owner, tx.account] }),
         ]);
-        const missingAllowance = requiredAllowance > allowance ? requiredAllowance - allowance : 0n;
+        const missingAllowance = requiredAllowance > allowance ? requiredAllowance - allowance : BigInt(0);
         warnings.push(`Current allowance for this spender: ${formatUnits(allowance, decimals)} ${symbol}.`);
-        if (missingAllowance > 0n) {
+        if (missingAllowance > BigInt(0)) {
           return {
             status: "revert",
             summary: `The spender lacks allowance to transfer ${formatUnits(requiredAllowance, decimals)} ${symbol}. Current allowance: ${formatUnits(allowance, decimals)} ${symbol}. Missing allowance: ${formatUnits(missingAllowance, decimals)} ${symbol}.`,

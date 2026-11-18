@@ -44,13 +44,43 @@ export class RpcFallbackProvider implements SimulationProvider {
     // ERC-20 metadata/allowance checks are advisory. A failure here must not
     // prevent the actual transaction simulation.
     try {
-      if (selector === "0x095ea7b3" || selector === "0xa9059cbb" || selector === "0x23b872dd") {
+      if (selector === "0x23b872dd" && input.data.length >= 202) {
+        const owner = ("0x" + input.data.slice(34, 74)) as `0x${string}`;
+        const requiredAllowance = BigInt("0x" + input.data.slice(138, 202));
+        const [decimals, symbol, allowance] = await Promise.all([
+          client.readContract({ address: tx.to, abi: erc20, functionName: "decimals" }),
+          client.readContract({ address: tx.to, abi: erc20, functionName: "symbol" }),
+          client.readContract({ address: tx.to, abi: erc20, functionName: "allowance", args: [owner, tx.account] }),
+        ]);
+        const missingAllowance = requiredAllowance > allowance ? requiredAllowance - allowance : 0n;
+        warnings.push(`Current allowance for this spender: ${formatUnits(allowance, decimals)} ${symbol}.`);
+        if (missingAllowance > 0n) {
+          return {
+            status: "revert",
+            summary: `The spender lacks allowance to transfer ${formatUnits(requiredAllowance, decimals)} ${symbol}. Current allowance: ${formatUnits(allowance, decimals)} ${symbol}. Missing allowance: ${formatUnits(missingAllowance, decimals)} ${symbol}.`,
+            revertReason: "Insufficient ERC-20 allowance",
+            assetChanges,
+            source: "rpc-fallback",
+            warnings,
+            raw: {
+              chainId: input.chainId,
+              token: tx.to,
+              symbol,
+              owner,
+              spender: tx.account,
+              requiredAllowance: requiredAllowance.toString(),
+              currentAllowance: allowance.toString(),
+              missingAllowance: missingAllowance.toString(),
+              simulatedWith: "ERC-20 allowanceOf pre-check",
+            },
+          };
+        }
+      } else if (selector === "0x095ea7b3" || selector === "0xa9059cbb") {
         const [balance, decimals, symbol] = await Promise.all([
           client.readContract({ address: tx.to, abi: erc20, functionName: "balanceOf", args: [tx.account] }),
           client.readContract({ address: tx.to, abi: erc20, functionName: "decimals" }),
           client.readContract({ address: tx.to, abi: erc20, functionName: "symbol" }),
         ]);
-
         if (selector === "0x095ea7b3") {
           const spender = ("0x" + input.data.slice(34, 74)) as `0x${string}`;
           const allowance = await client.readContract({
@@ -135,7 +165,7 @@ export class RpcFallbackProvider implements SimulationProvider {
       if (isExecutionRevert(message) || isInsufficientFunds(message)) {
         return {
           status: "revert",
-          summary: revertData ? decoded.summary : friendlyFailure(message),
+          summary: revertData ? decoded.summary : isExecutionRevert(message) ? "Unknown reason. Raw revert data was not provided by the RPC." : friendlyFailure(message),
           revertReason: decoded.reason || (isInsufficientFunds(message) ? "Insufficient ETH balance" : undefined),
           source: "rpc-fallback",
           warnings,

@@ -1,7 +1,7 @@
 import { decodeErrorResult, parseAbi } from "viem";
 const errors = parseAbi(["error Error(string)","error Panic(uint256)"]);
 export function decodeRevert(raw?: string) {
-  if (!raw || !/^0x[0-9a-fA-F]{8}/.test(raw)) return { reason: undefined, summary: "The call failed, but the network did not provide a readable reason." };
+  if (!raw || !/^0x[0-9a-fA-F]{8}/.test(raw)) return { reason: undefined, summary: raw ? `Unknown reason. Raw revert data: ${raw}` : "Unknown reason. Raw revert data was not provided by the RPC." };
   const selector = raw.slice(0,10).toLowerCase();
   const common: Record<string,string> = {
     "0x08c379a0": "The contract rejected the transaction.",
@@ -21,7 +21,7 @@ export function decodeRevert(raw?: string) {
     const code = BigInt(decoded.args[0] as bigint);
     const panicNames: Record<string,string> = { "17":"arithmetic overflow or underflow", "18":"division by zero", "33":"invalid enum conversion", "50":"an out-of-bounds array access", "65":"memory allocation overflow" };
     return { reason: `Panic(0x${code.toString(16)})`, summary: `The contract encountered a Solidity panic: ${panicNames[code.toString()] || "an internal safety check failed"}.` };
-  } catch { return { reason: raw, summary: "The contract reverted with an unrecognized error. Check the raw revert data for details." }; }
+  } catch { return { reason: raw, summary: `Unknown reason. Raw revert data: ${raw}` }; }
 }
 export function friendlyFailure(message: string) {
   const m = message.toLowerCase();

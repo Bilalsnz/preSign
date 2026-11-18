@@ -71,7 +71,7 @@ export class RpcFallbackProvider implements SimulationProvider {
               requiredAllowance: requiredAllowance.toString(),
               currentAllowance: allowance.toString(),
               missingAllowance: missingAllowance.toString(),
-              simulatedWith: "ERC-20 allowanceOf pre-check",
+              simulatedWith: "ERC-20 allowance pre-check",
             },
           };
         }
